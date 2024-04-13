@@ -53,11 +53,11 @@ if patient_data:  # Check if patient_data is not empty
     }
 
     # Combine patient information and data
-    json_data = {"patient_info": patient_info, "patient_data": patient_data}
+    json_data = {"patient_data": patient_data}
 
     # Write JSON to file
     output_file = "dataNew.json"
     with open(output_file, "w") as json_file:
-        json.dump(json_data, json_file, indent=2)
+        json.dump(patient_data, json_file, indent=2)
 
     print("JSON file created successfully.")
