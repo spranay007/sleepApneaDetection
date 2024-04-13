@@ -13,12 +13,12 @@ files = os.listdir('./')
 os.listdir("./apnea-ecg-database")
 
 #record = wfdb.rdrecord('./apnea-ecg-database/setOne/a01')
-record = wfdb.rdrecord(record_name='./apnea-ecg-database/setOne/a01er', sampfrom=1200, sampto=19400,channels=None, physical=True, pn_dir=None, m2s=True, smooth_frames=True, ignore_skew=False, return_res=16, force_channels=True, channel_names=None, warn_empty=False)
+record = wfdb.rdrecord(record_name='./apnea-ecg-database/ECGTrainingData/a07',channels=None, physical=True, pn_dir=None, m2s=True, smooth_frames=True, ignore_skew=False, return_res=16, force_channels=True, channel_names=None, warn_empty=False)
 wfdb.plot_wfdb(record, title='Record a01 from Physionet Kaggle Apnea ECG') 
-#display(record.__dict__)
+display(record.__dict__)
 
 
-recordname = "./apnea-ecg-database/setOne/a01r"
+recordname = "./apnea-ecg-database/ECGTrainingData/a07"
 record1 = wfdb.rdsamp(recordname)
 
 annotation = wfdb.rdann(recordname,

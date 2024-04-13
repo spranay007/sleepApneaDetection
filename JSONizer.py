@@ -1,63 +1,51 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 12 12:44:46 2024
-
-@author: spran
-"""
 import os
 import wfdb
 import numpy as np
 import json
 
-# Read ECG data
-recordname_ecg = "./apnea-ecg-database/setOne/a01"
-record_ecg = wfdb.rdsamp(recordname_ecg)
-ecg_data = record_ecg[0][:, 0]  # Selecting the first channel's data
+def process_files(directory):
+    json_data = []
 
-# Read apnea notation
-recordname_apnea = "./apnea-ecg-database/setOne/a01r"
-if os.path.isfile(recordname_apnea + '.apn'):  # Checking if the apn file exists
-    annotation = wfdb.rdann(recordname_apnea, extension="apn")
-else:
-    print("Apnea annotation file not found!")
-    exit()
+    for filename in sorted(os.listdir(directory)):
+        if filename.endswith('.dat'):  # Check if it's an ECG file
+            ecg_path = os.path.join(directory, filename)
+            apnea_path = os.path.join(directory, filename[:-4] + '.apn')
 
-# Prompt user for patient information
-patient_id = input("Enter patient ID: ")
-sex = input("Enter patient sex (M/F): ")
-age = input("Enter patient age: ")
+            # Check if corresponding apnea file exists
+            if not os.path.exists(apnea_path):
+                print(f"Apnea annotation file not found for {filename}!")
+                continue
 
-# Create JSON data
-patient_data = []
-sample_rate_ecg = record_ecg[1]['fs']
-samples_per_minute = 60 * sample_rate_ecg  # Number of samples in one minute
-for i in range(0, len(annotation.symbol)):
-    apnea_minute_data = annotation.symbol[i]
-    if apnea_minute_data is None:  # Check if apnea_minute_data is null
-        print("Null apnea value encountered. Stopping JSON creation.")
-        patient_data = []
-        break
-    ecg_minute_data = ecg_data[i * samples_per_minute: (i + 1) * samples_per_minute].tolist()
-    minute_data = {
-        "ecg_data": ecg_minute_data,
-        "apnea_detected": apnea_minute_data
-    }
-    patient_data.append(minute_data)
+            # Read ECG data
+            record_ecg = wfdb.rdsamp(ecg_path[:-4])
+            ecg_data = record_ecg[0][:, 0]  # Selecting the first channel's data
 
-if patient_data:  # Check if patient_data is not empty
-    # Create patient information dictionary
-    patient_info = {
-        "patient_id": patient_id,
-        "sex": sex,
-        "age": age
-    }
+            # Read apnea notation
+            annotation = wfdb.rdann(apnea_path[:-4], extension="apn")
 
-    # Combine patient information and data
-    json_data = {"patient_data": patient_data}
+            # Create JSON data
+            sample_rate_ecg = 100#record_ecg[1]['fs']
+            samples_per_minute = 60 * sample_rate_ecg  # Number of samples in one minute
+            for i in range(0, len(annotation.symbol)):
+                apnea_minute_data = annotation.symbol[i]
+                ecg_minute_data = ecg_data[i * samples_per_minute: (i + 1) * samples_per_minute].tolist()
+                minute_data = {
+                    "patientName": os.path.splitext(filename)[0],  # Extracting patient name without extension
+                    "chunkid": i,
+                    "ecg_data": ecg_minute_data,
+                    "apnea_detected": apnea_minute_data
+                }
+                json_data.append(minute_data)
 
-    # Write JSON to file
-    output_file = "dataNew.json"
-    with open(output_file, "w") as json_file:
-        json.dump(patient_data, json_file, indent=2)
+    return json_data
 
-    print("JSON file created successfully.")
+# Directory where ECG and apnea files are stored
+directory = "./apnea-ecg-database/ECGTrainingData"
+json_data = process_files(directory)
+
+# Write JSON to file
+output_file = "dataNew.json"
+with open(output_file, "w") as json_file:
+    json.dump(json_data, json_file, indent=2)
+
+print("JSON file created successfully.")
