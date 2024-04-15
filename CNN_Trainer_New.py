@@ -11,6 +11,9 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class JSONDataset(Dataset):
     def __init__(self, json_file):
         with open(json_file, 'r') as f:
@@ -20,8 +23,8 @@ class JSONDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        feature = torch.tensor(self.data[idx]['ecg_data'], dtype=torch.float32)
-        label = torch.tensor(1 if self.data[idx]['apnea_detected'] == 'A' else 0, dtype=torch.long)
+        feature = torch.tensor(self.data[idx]['ecg_data'], dtype=torch.float32).to(device)
+        label = torch.tensor(1 if self.data[idx]['apnea_detected'] == 'A' else 0, dtype=torch.long).to(device)
         return feature, label
 
 # Path to your JSON file
@@ -40,7 +43,7 @@ batch_size = 64  # Example batch size
 sequence_length = 6000 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
- # Example sequence length
+
 # Define the CNN model
 class ECGCNN(nn.Module):
     def __init__(self, batch_size, sequence_length):
@@ -79,7 +82,7 @@ class ECGCNN(nn.Module):
 
 # Initialize the CNN model
 num_time_points = dataset[0][0].shape[0]  # Assuming ECG data has fixed length
-model = ECGCNN(batch_size, sequence_length)
+model = ECGCNN(batch_size, sequence_length).to(device)  # Move model to GPU if available
 
 # Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -91,6 +94,7 @@ def train_model(model, train_loader, criterion, optimizer, num_epochs=10):
         model.train()
         running_loss = 0.0
         for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move data to GPU if available
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -111,6 +115,7 @@ def evaluate_model(model, val_loader):
     total = 0
     with torch.no_grad():
         for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move data to GPU if available
             outputs = model(inputs)
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
