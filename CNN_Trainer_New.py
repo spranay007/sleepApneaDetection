@@ -113,6 +113,10 @@ def evaluate_model(model, val_loader):
     model.eval()
     correct = 0
     total = 0
+    true_positive = 0
+    true_negative = 0
+    false_positive = 0
+    false_negative = 0
     with torch.no_grad():
         for inputs, labels in val_loader:
             inputs, labels = inputs.to(device), labels.to(device)  # Move data to GPU if available
@@ -120,9 +124,19 @@ def evaluate_model(model, val_loader):
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            
+            # Calculating true positive, true negative, false positive, false negative
+            true_positive += ((predicted == 1) & (labels == 1)).sum().item()
+            true_negative += ((predicted == 0) & (labels == 0)).sum().item()
+            false_positive += ((predicted == 1) & (labels == 0)).sum().item()
+            false_negative += ((predicted == 0) & (labels == 1)).sum().item()
 
     accuracy = correct / total
+    sensitivity = true_positive / (true_positive + false_negative)
+    specificity = true_negative / (true_negative + false_positive)
     print(f'Validation Accuracy: {accuracy:.4f}')
+    print(f'Sensitivity: {sensitivity:.4f}')
+    print(f'Specificity: {specificity:.4f}')
 
 # Evaluate the model
 evaluate_model(model, val_loader)
